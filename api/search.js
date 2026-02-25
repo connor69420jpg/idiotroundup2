@@ -191,6 +191,8 @@ function parseTikTokResults(items, originalVideoId, originalAuthor) {
         type: "repost",
         likes: item.diggCount || item.stats?.diggCount || 0,
         views: item.playCount || item.stats?.playCount || 0,
+        comments: item.commentCount || item.stats?.commentCount || 0,
+        shares: item.shareCount || item.stats?.shareCount || 0,
       };
     });
 }
@@ -219,6 +221,7 @@ function parseInstagramResults(items, originalAuthor) {
         type: "repost",
         likes: item.likesCount || 0,
         views: item.videoViewCount || 0,
+        comments: item.commentsCount || 0,
       };
     });
 }
@@ -229,8 +232,8 @@ async function aiWebSearch(client, url, platform, author, videoInfo) {
     model: "claude-sonnet-4-20250514",
     max_tokens: 2000,
     system: `You find reposted video content. Do 5+ web searches. Return ONLY a JSON array.
-Each object: platform (tiktok/instagram/youtube/facebook/twitter/website), account_name, url (REAL URL from search results only), confidence (high/medium), date_found (YYYY-MM-DD), type (repost/embed/reaction).
-Do NOT include the original: ${url}. NEVER fabricate URLs.`,
+Each object: platform (tiktok/instagram/youtube/facebook/twitter/website), account_name, url (REAL URL from search results only), confidence (high/medium), date_found (YYYY-MM-DD), type (repost/embed/reaction), likes (number or 0), views (number or 0), comments (number or 0), shares (number or 0).
+Include any engagement numbers you find in the search results. Do NOT include the original: ${url}. NEVER fabricate URLs.`,
     messages: [
       {
         role: "user",
