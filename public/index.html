@@ -835,6 +835,8 @@
         </div>
         <div class="result-match">
           <span class="match-badge ${r.confidence}">${r.confidence === 'high' ? '98%+' : '~85%'} match</span>
+          ${r.views ? `<span class="result-date">${formatNumber(r.views)} views</span>` : ''}
+          ${r.likes ? `<span class="result-date">${formatNumber(r.likes)} likes</span>` : ''}
           <span class="result-date">${r.date_found}</span>
         </div>
         <svg class="result-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>`;
@@ -842,6 +844,13 @@
     });
 
     document.getElementById('resultsCount').textContent = `${results.length} match${results.length !== 1 ? 'es' : ''}`;
+  }
+
+  function formatNumber(n) {
+    if (!n) return '';
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+    return String(n);
   }
 
   // ===== MAIN SEARCH — calls our secure /api/search =====
