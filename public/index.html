@@ -3,17 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Idiot Roundup — Find Your Stolen Videos</title>
+<title>THE IDIOT ROUNDUP</title>
 <meta name="description" content="Paste a TikTok, Instagram Reel, or YouTube Short link and find every repost across the internet.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤠</text></svg>">
-<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤡</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Bungee+Shade&family=Bangers&family=DM+Sans:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg-dark: #0a0a0f;
     --bg-card: #12121a;
     --bg-card-hover: #1a1a26;
     --accent-red: #ff3333;
-    --accent-red-dim: #cc2222;
     --accent-orange: #ff6b35;
     --accent-yellow: #ffd23f;
     --text-primary: #f0ece4;
@@ -34,16 +33,28 @@
     overflow-x: hidden;
   }
 
-  body::before {
-    content: '';
+  /* EMOJI BACKGROUND */
+  .emoji-bg {
     position: fixed;
     inset: 0;
-    background:
-      radial-gradient(ellipse at 20% 50%, rgba(255,51,51,0.06) 0%, transparent 60%),
-      radial-gradient(ellipse at 80% 20%, rgba(255,107,53,0.04) 0%, transparent 60%),
-      radial-gradient(ellipse at 50% 80%, rgba(255,210,63,0.03) 0%, transparent 60%);
-    pointer-events: none;
     z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    opacity: 0.07;
+  }
+
+  .emoji-bg span {
+    position: absolute;
+    font-size: 40px;
+    animation: floatEmoji 20s linear infinite;
+    user-select: none;
+  }
+
+  @keyframes floatEmoji {
+    0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
   }
 
   .grain-overlay {
@@ -67,47 +78,53 @@
   .header {
     text-align: center;
     margin-bottom: 48px;
-    animation: fadeInDown 0.6s ease-out;
+    animation: slamIn 0.6s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
-  @keyframes fadeInDown {
-    from { opacity: 0; transform: translateY(-20px); }
-    to { opacity: 1; transform: translateY(0); }
+  @keyframes slamIn {
+    0% { opacity: 0; transform: scale(1.5) translateY(-30px); }
+    60% { transform: scale(0.95) translateY(5px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
   }
 
-  .logo-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: linear-gradient(135deg, var(--accent-red), var(--accent-orange));
-    padding: 6px 16px;
-    border-radius: 100px;
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    color: white;
-    margin-bottom: 20px;
+  .top-emojis {
+    font-size: 48px;
+    margin-bottom: 12px;
+    letter-spacing: 8px;
+    animation: bounceEmoji 2s ease-in-out infinite;
   }
 
-  .logo-badge svg { width: 14px; height: 14px; }
+  @keyframes bounceEmoji {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
 
   h1 {
-    font-family: 'Archivo Black', sans-serif;
-    font-size: clamp(2.5rem, 6vw, 4rem);
-    line-height: 1;
-    letter-spacing: -2px;
-    background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-orange) 50%, var(--accent-red) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 12px;
+    font-family: 'Bungee Shade', cursive;
+    font-size: clamp(2.2rem, 7vw, 4.5rem);
+    line-height: 1.1;
+    letter-spacing: 2px;
+    color: var(--accent-yellow);
+    text-shadow:
+      3px 3px 0px var(--accent-red),
+      6px 6px 0px rgba(255,51,51,0.4),
+      0 0 40px rgba(255,210,63,0.3);
+    margin-bottom: 8px;
+    -webkit-text-stroke: 1px rgba(255,107,53,0.5);
+  }
+
+  .subtitle-meme {
+    font-family: 'Bangers', cursive;
+    font-size: clamp(1rem, 3vw, 1.5rem);
+    color: var(--text-secondary);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
   }
 
   .subtitle {
-    font-size: 16px;
-    color: var(--text-secondary);
+    font-size: 15px;
+    color: var(--text-muted);
     max-width: 480px;
     margin: 0 auto;
     line-height: 1.5;
@@ -126,31 +143,28 @@
 
   .search-box {
     background: var(--bg-card);
-    border: 1px solid var(--border);
+    border: 2px solid var(--border);
     border-radius: 16px;
     padding: 24px;
     transition: border-color 0.3s, box-shadow 0.3s;
   }
 
   .search-box:focus-within {
-    border-color: var(--accent-red);
-    box-shadow: 0 0 0 3px rgba(255,51,51,0.1), 0 8px 32px rgba(0,0,0,0.3);
+    border-color: var(--accent-yellow);
+    box-shadow: 0 0 0 3px rgba(255,210,63,0.15), 0 8px 32px rgba(0,0,0,0.3);
   }
 
   .search-label {
     display: block;
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
+    font-family: 'Bangers', cursive;
+    font-size: 14px;
     text-transform: uppercase;
-    letter-spacing: 1.5px;
+    letter-spacing: 2px;
     color: var(--text-muted);
     margin-bottom: 12px;
   }
 
-  .input-row {
-    display: flex;
-    gap: 12px;
-  }
+  .input-row { display: flex; gap: 12px; }
 
   .url-input {
     flex: 1;
@@ -166,28 +180,28 @@
   }
 
   .url-input::placeholder { color: var(--text-muted); }
-  .url-input:focus { border-color: var(--accent-red); }
+  .url-input:focus { border-color: var(--accent-yellow); }
 
   .search-btn {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: linear-gradient(135deg, var(--accent-red), var(--accent-orange));
-    color: white;
+    background: linear-gradient(135deg, var(--accent-yellow), var(--accent-orange));
+    color: #0a0a0f;
     border: none;
     border-radius: 10px;
     padding: 14px 28px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 15px;
-    font-weight: 700;
+    font-family: 'Bangers', cursive;
+    font-size: 18px;
+    letter-spacing: 1px;
     cursor: pointer;
-    transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+    transition: transform 0.15s, box-shadow 0.15s;
     white-space: nowrap;
   }
 
   .search-btn:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 20px rgba(255,51,51,0.3);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 4px 20px rgba(255,210,63,0.4);
   }
 
   .search-btn:active:not(:disabled) { transform: translateY(0); }
@@ -214,20 +228,13 @@
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: var(--accent-red);
-    opacity: 0.5;
+    background: var(--accent-yellow);
+    opacity: 0.6;
   }
 
   /* STATUS */
-  .status-section {
-    margin-bottom: 32px;
-    display: none;
-  }
-
-  .status-section.visible {
-    display: block;
-    animation: fadeInUp 0.4s ease-out;
-  }
+  .status-section { margin-bottom: 32px; display: none; }
+  .status-section.visible { display: block; animation: fadeInUp 0.4s ease-out; }
 
   .status-card {
     background: var(--bg-card);
@@ -236,18 +243,12 @@
     padding: 20px 24px;
   }
 
-  .status-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
+  .status-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
 
   .status-spinner {
-    width: 20px;
-    height: 20px;
+    width: 20px; height: 20px;
     border: 2px solid var(--border);
-    border-top-color: var(--accent-red);
+    border-top-color: var(--accent-yellow);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
@@ -255,193 +256,99 @@
   @keyframes spin { to { transform: rotate(360deg); } }
 
   .status-title { font-weight: 700; font-size: 14px; }
-
-  .status-steps {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
+  .status-steps { display: flex; flex-direction: column; gap: 8px; }
 
   .status-step {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 13px;
-    color: var(--text-muted);
-    transition: color 0.3s;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; color: var(--text-muted); transition: color 0.3s;
   }
-
   .status-step.active { color: var(--text-secondary); }
   .status-step.done { color: var(--success); }
 
   .step-icon {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
+    width: 18px; height: 18px; border-radius: 50%;
     border: 1.5px solid currentColor;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; flex-shrink: 0;
   }
-
-  .step-icon.done {
-    background: var(--success);
-    border-color: var(--success);
-    color: white;
-  }
+  .step-icon.done { background: var(--success); border-color: var(--success); color: white; }
 
   /* PREVIEW */
-  .preview-section {
-    margin-bottom: 32px;
-    display: none;
-  }
-
-  .preview-section.visible {
-    display: block;
-    animation: fadeInUp 0.4s ease-out;
-  }
+  .preview-section { margin-bottom: 32px; display: none; }
+  .preview-section.visible { display: block; animation: fadeInUp 0.4s ease-out; }
 
   .preview-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-    display: flex;
-    gap: 20px;
-    align-items: flex-start;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px; display: flex; gap: 20px; align-items: flex-start;
   }
 
   .preview-thumbnail {
-    width: 120px;
-    height: 160px;
-    background: var(--bg-dark);
-    border-radius: 8px;
-    overflow: hidden;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 120px; height: 160px; background: var(--bg-dark);
+    border-radius: 8px; overflow: hidden; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
   }
-
   .preview-thumbnail img { width: 100%; height: 100%; object-fit: cover; }
   .preview-thumbnail .placeholder-icon { color: var(--text-muted); }
-
   .preview-info { flex: 1; min-width: 0; }
 
   .preview-platform {
-    font-family: 'Space Mono', monospace;
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: var(--accent-orange);
-    margin-bottom: 6px;
+    font-family: 'Space Mono', monospace; font-size: 10px;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--accent-orange); margin-bottom: 6px;
   }
 
   .preview-title {
-    font-weight: 700;
-    font-size: 16px;
-    margin-bottom: 4px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-weight: 700; font-size: 16px; margin-bottom: 4px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
 
-  .preview-author {
-    font-size: 13px;
-    color: var(--text-secondary);
-    margin-bottom: 8px;
-  }
-
+  .preview-author { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; }
   .preview-meta { display: flex; gap: 16px; flex-wrap: wrap; }
-
-  .meta-item {
-    font-size: 12px;
-    color: var(--text-muted);
-    font-family: 'Space Mono', monospace;
-  }
+  .meta-item { font-size: 12px; color: var(--text-muted); font-family: 'Space Mono', monospace; }
 
   .fingerprint-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 10px;
-    background: rgba(255,51,51,0.1);
-    border: 1px solid rgba(255,51,51,0.2);
-    border-radius: 6px;
-    padding: 4px 10px;
-    font-family: 'Space Mono', monospace;
-    font-size: 10px;
-    color: var(--accent-red);
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 10px;
+    background: rgba(255,210,63,0.1); border: 1px solid rgba(255,210,63,0.2);
+    border-radius: 6px; padding: 4px 10px;
+    font-family: 'Space Mono', monospace; font-size: 10px; color: var(--accent-yellow);
   }
 
   /* RESULTS */
   .results-section { display: none; }
+  .results-section.visible { display: block; animation: fadeInUp 0.4s ease-out; }
 
-  .results-section.visible {
-    display: block;
-    animation: fadeInUp 0.4s ease-out;
-  }
-
-  .results-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-  }
+  .results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 
   .results-title {
-    font-family: 'Archivo Black', sans-serif;
-    font-size: 22px;
-    letter-spacing: -0.5px;
+    font-family: 'Bangers', cursive; font-size: 28px;
+    letter-spacing: 2px; color: var(--accent-yellow);
   }
 
   .results-count {
-    font-family: 'Space Mono', monospace;
-    font-size: 12px;
-    color: var(--accent-red);
-    background: rgba(255,51,51,0.1);
-    border: 1px solid rgba(255,51,51,0.2);
-    padding: 4px 12px;
-    border-radius: 100px;
+    font-family: 'Space Mono', monospace; font-size: 12px;
+    color: var(--accent-red); background: rgba(255,51,51,0.1);
+    border: 1px solid rgba(255,51,51,0.2); padding: 4px 12px; border-radius: 100px;
   }
 
-  .results-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
+  .results-grid { display: flex; flex-direction: column; gap: 12px; }
 
   .result-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 18px 20px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 20px; display: flex;
+    align-items: center; gap: 16px;
     transition: border-color 0.2s, background 0.2s, transform 0.15s;
-    cursor: pointer;
-    text-decoration: none;
-    color: inherit;
+    cursor: pointer; text-decoration: none; color: inherit;
   }
 
   .result-card:hover {
-    border-color: var(--accent-red);
-    background: var(--bg-card-hover);
+    border-color: var(--accent-yellow); background: var(--bg-card-hover);
     transform: translateX(4px);
   }
 
   .result-platform-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    font-size: 18px;
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 18px;
   }
 
   .result-platform-icon.tiktok { background: rgba(0,0,0,0.5); border: 1px solid #333; }
@@ -453,164 +360,70 @@
   .result-platform-icon.other { background: rgba(255,255,255,0.05); border: 1px solid var(--border); }
 
   .type-badge {
-    font-size: 10px;
-    font-family: 'Space Mono', monospace;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 2px 6px;
-    border-radius: 4px;
-    margin-top: 4px;
-    display: inline-block;
+    font-size: 10px; font-family: 'Space Mono', monospace;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 2px 6px; border-radius: 4px; margin-top: 4px; display: inline-block;
   }
-
   .type-badge.repost { background: rgba(255,51,51,0.15); color: var(--accent-red); }
   .type-badge.embed { background: rgba(255,210,63,0.15); color: var(--accent-yellow); }
   .type-badge.reaction { background: rgba(138,134,150,0.15); color: var(--text-secondary); }
 
   .result-info { flex: 1; min-width: 0; }
+  .result-account { font-weight: 700; font-size: 14px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .result-url { font-size: 12px; color: var(--text-muted); font-family: 'Space Mono', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  .result-account {
-    font-weight: 700;
-    font-size: 14px;
-    margin-bottom: 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+  .result-match { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
 
-  .result-url {
-    font-size: 12px;
-    color: var(--text-muted);
-    font-family: 'Space Mono', monospace;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+  .match-badge { font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 6px; }
+  .match-badge.high { background: rgba(34,197,94,0.15); color: var(--success); border: 1px solid rgba(34,197,94,0.3); }
+  .match-badge.medium { background: rgba(245,158,11,0.15); color: var(--warning); border: 1px solid rgba(245,158,11,0.3); }
 
-  .result-match {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 4px;
-    flex-shrink: 0;
-  }
+  .result-date { font-size: 11px; color: var(--text-muted); font-family: 'Space Mono', monospace; }
 
-  .match-badge {
-    font-family: 'Space Mono', monospace;
-    font-size: 12px;
-    font-weight: 700;
-    padding: 3px 10px;
-    border-radius: 6px;
-  }
-
-  .match-badge.high {
-    background: rgba(34,197,94,0.15);
-    color: var(--success);
-    border: 1px solid rgba(34,197,94,0.3);
-  }
-
-  .match-badge.medium {
-    background: rgba(245,158,11,0.15);
-    color: var(--warning);
-    border: 1px solid rgba(245,158,11,0.3);
-  }
-
-  .result-date {
-    font-size: 11px;
-    color: var(--text-muted);
-    font-family: 'Space Mono', monospace;
-  }
-
-  .result-arrow {
-    color: var(--text-muted);
-    flex-shrink: 0;
-    transition: transform 0.2s, color 0.2s;
-  }
-
-  .result-card:hover .result-arrow {
-    transform: translateX(4px);
-    color: var(--accent-red);
-  }
+  .result-arrow { color: var(--text-muted); flex-shrink: 0; transition: transform 0.2s, color 0.2s; }
+  .result-card:hover .result-arrow { transform: translateX(4px); color: var(--accent-yellow); }
 
   /* NO RESULTS */
   .no-results { text-align: center; padding: 60px 20px; }
-  .no-results-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+  .no-results-icon { font-size: 48px; margin-bottom: 16px; }
   .no-results-text { font-size: 16px; color: var(--text-secondary); margin-bottom: 8px; }
   .no-results-sub { font-size: 13px; color: var(--text-muted); }
 
   /* ERROR */
   .error-banner {
-    background: rgba(255,51,51,0.1);
-    border: 1px solid rgba(255,51,51,0.3);
-    border-radius: 10px;
-    padding: 14px 18px;
-    font-size: 14px;
-    color: var(--accent-red);
-    margin-bottom: 20px;
-    display: none;
+    background: rgba(255,51,51,0.1); border: 1px solid rgba(255,51,51,0.3);
+    border-radius: 10px; padding: 14px 18px; font-size: 14px;
+    color: var(--accent-red); margin-bottom: 20px; display: none;
   }
-
-  .error-banner.visible {
-    display: block;
-    animation: fadeInUp 0.3s ease-out;
-  }
+  .error-banner.visible { display: block; animation: fadeInUp 0.3s ease-out; }
 
   /* HOW IT WORKS */
-  .how-section {
-    margin-top: 48px;
-    animation: fadeInUp 0.6s ease-out 0.3s both;
-  }
+  .how-section { margin-top: 48px; animation: fadeInUp 0.6s ease-out 0.3s both; }
 
   .how-title {
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: var(--text-muted);
-    margin-bottom: 20px;
+    font-family: 'Bangers', cursive; font-size: 18px;
+    letter-spacing: 2px; color: var(--text-muted); margin-bottom: 20px;
   }
 
-  .how-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 12px;
-  }
+  .how-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
 
-  .how-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-  }
+  .how-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
 
   .how-number {
-    font-family: 'Archivo Black', sans-serif;
-    font-size: 28px;
-    background: linear-gradient(135deg, var(--accent-red), var(--accent-orange));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    font-family: 'Bungee Shade', cursive; font-size: 24px;
+    color: var(--accent-yellow);
+    text-shadow: 1px 1px 0 var(--accent-red);
     margin-bottom: 8px;
   }
 
   .how-card-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+  .how-card-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
 
-  .how-card-desc {
-    font-size: 12px;
-    color: var(--text-secondary);
-    line-height: 1.5;
-  }
-
-  .footer {
-    margin-top: 64px;
-    text-align: center;
-    padding-bottom: 32px;
-  }
+  .footer { margin-top: 64px; text-align: center; padding-bottom: 32px; }
 
   .footer-text {
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    color: var(--text-muted);
+    font-family: 'Bangers', cursive; font-size: 14px;
+    color: var(--text-muted); letter-spacing: 2px;
   }
 
   @media (max-width: 600px) {
@@ -623,26 +436,26 @@
 </style>
 </head>
 <body>
+
+<!-- FLOATING EMOJI BACKGROUND -->
+<div class="emoji-bg" id="emojiBg"></div>
 <div class="grain-overlay"></div>
 
 <div class="app-container">
   <header class="header">
-    <div class="logo-badge">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-      Video Repost Tracker
-    </div>
-    <h1>The Idiot Roundup</h1>
+    <div class="top-emojis">🤡🤠🤡🤠🤡</div>
+    <h1>THE IDIOT<br>ROUNDUP</h1>
+    <p class="subtitle-meme">Find the clowns who stole your content 🤡🤠</p>
     <p class="subtitle">Paste a short-form video link. We'll hunt down every repost across the internet.</p>
   </header>
 
   <section class="search-section">
     <div class="search-box">
-      <label class="search-label">Video URL</label>
+      <label class="search-label">🔗 Paste Video URL</label>
       <div class="input-row">
         <input type="text" class="url-input" id="urlInput" placeholder="https://www.tiktok.com/@user/video/123456..." />
         <button class="search-btn" id="searchBtn" onclick="startSearch()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-          Round 'em up
+          🤠 Round 'em up
         </button>
       </div>
       <div class="supported-platforms">
@@ -683,24 +496,21 @@
           <span class="meta-item" id="previewDuration">—</span>
           <span class="meta-item" id="previewDate">—</span>
         </div>
-        <div class="fingerprint-badge" id="fingerprintBadge">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 10V4m0 0L9 7m3-3 3 3"/><rect x="4" y="10" width="16" height="10" rx="2"/></svg>
-          Fingerprint: —
-        </div>
+        <div class="fingerprint-badge" id="fingerprintBadge">🔒 Fingerprint: —</div>
       </div>
     </div>
   </section>
 
   <section class="results-section" id="resultsSection">
     <div class="results-header">
-      <h2 class="results-title">Reposts Found</h2>
+      <h2 class="results-title">🚨 Idiots Found</h2>
       <span class="results-count" id="resultsCount">0 matches</span>
     </div>
     <div class="results-grid" id="resultsGrid"></div>
   </section>
 
   <section class="how-section" id="howSection">
-    <h3 class="how-title">How it works</h3>
+    <h3 class="how-title">🤠 How It Works</h3>
     <div class="how-grid">
       <div class="how-card">
         <div class="how-number">01</div>
@@ -710,7 +520,7 @@
       <div class="how-card">
         <div class="how-number">02</div>
         <div class="how-card-title">Reverse Search</div>
-        <div class="how-card-desc">Using AI-powered web search, we crawl TikTok, Instagram, YouTube, Facebook, Twitter/X, and more for matching content.</div>
+        <div class="how-card-desc">Using AI-powered web search + Apify scrapers, we crawl TikTok, Instagram, YouTube, Facebook, Twitter/X, and more.</div>
       </div>
       <div class="how-card">
         <div class="how-number">03</div>
@@ -726,11 +536,38 @@
   </section>
 
   <footer class="footer">
-    <p class="footer-text">The Idiot Roundup &mdash; find the clowns who stole your content</p>
+    <p class="footer-text">🤡 The Idiot Roundup — find the clowns who stole your content 🤠</p>
   </footer>
 </div>
 
 <script>
+  // FLOATING EMOJI BACKGROUND
+  (function() {
+    const emojis = ['🤡', '🤠', '🤡', '🤠', '🎪', '🤡', '🤠', '🤡', '🐄', '🤠'];
+    const container = document.getElementById('emojiBg');
+    function spawnEmoji() {
+      const span = document.createElement('span');
+      span.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      span.style.left = Math.random() * 100 + '%';
+      span.style.fontSize = (25 + Math.random() * 35) + 'px';
+      span.style.animationDuration = (12 + Math.random() * 18) + 's';
+      span.style.animationDelay = Math.random() * 2 + 's';
+      container.appendChild(span);
+      setTimeout(() => span.remove(), 32000);
+    }
+    // Spawn initial batch
+    for (let i = 0; i < 30; i++) {
+      const span = document.createElement('span');
+      span.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      span.style.left = Math.random() * 100 + '%';
+      span.style.top = Math.random() * 100 + '%';
+      span.style.fontSize = (25 + Math.random() * 35) + 'px';
+      span.style.position = 'absolute';
+      container.appendChild(span);
+    }
+    setInterval(spawnEmoji, 800);
+  })();
+
   function detectPlatform(url) {
     if (/tiktok\.com/i.test(url)) return 'tiktok';
     if (/instagram\.com/i.test(url)) return 'instagram';
@@ -761,36 +598,19 @@
     const step = document.getElementById(`step${n}`);
     const icon = step.querySelector('.step-icon');
     step.className = `status-step ${state}`;
-    if (state === 'done') {
-      icon.className = 'step-icon done';
-      icon.textContent = '✓';
-    }
+    if (state === 'done') { icon.className = 'step-icon done'; icon.textContent = '✓'; }
   }
 
-  async function sleep(ms) {
-    return new Promise(r => setTimeout(r, ms));
-  }
+  async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
   function extractMetadata(url, platform) {
-    const metadata = {
-      title: 'Short-form video',
-      author: '@creator',
-      duration: `0:${15 + Math.floor(Math.random() * 45)}`,
-      date: new Date().toISOString().split('T')[0]
-    };
+    const metadata = { title: 'Short-form video', author: '@creator', duration: `0:${15 + Math.floor(Math.random() * 45)}`, date: new Date().toISOString().split('T')[0] };
     try {
       const u = new URL(url);
       const parts = u.pathname.split('/').filter(Boolean);
-      if (platform === 'tiktok') {
-        metadata.author = parts[0]?.startsWith('@') ? parts[0] : '@' + (parts[0] || 'creator');
-        metadata.title = 'TikTok Video';
-      } else if (platform === 'instagram') {
-        metadata.author = parts[0] === 'reel' || parts[0] === 'reels' ? '@creator' : '@' + (parts[0] || 'creator');
-        metadata.title = 'Instagram Reel';
-      } else if (platform === 'youtube') {
-        metadata.author = '@creator';
-        metadata.title = 'YouTube Short';
-      }
+      if (platform === 'tiktok') { metadata.author = parts[0]?.startsWith('@') ? parts[0] : '@' + (parts[0] || 'creator'); metadata.title = 'TikTok Video'; }
+      else if (platform === 'instagram') { metadata.author = parts[0] === 'reel' || parts[0] === 'reels' ? '@creator' : '@' + (parts[0] || 'creator'); metadata.title = 'Instagram Reel'; }
+      else if (platform === 'youtube') { metadata.author = '@creator'; metadata.title = 'YouTube Short'; }
     } catch {}
     return metadata;
   }
@@ -800,32 +620,28 @@
     return icons[platform] || icons.other;
   }
 
+  function formatNumber(n) {
+    if (!n) return '';
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+    return String(n);
+  }
+
   function renderResults(results) {
     const grid = document.getElementById('resultsGrid');
     grid.innerHTML = '';
-
     if (results.length === 0) {
-      grid.innerHTML = `
-        <div class="no-results">
-          <div class="no-results-icon">🎯</div>
-          <div class="no-results-text">No reposts found!</div>
-          <div class="no-results-sub">This video appears to be unique — or the thieves are hiding well. Try again later as new reposts surface.</div>
-        </div>`;
+      grid.innerHTML = `<div class="no-results"><div class="no-results-icon">🎯</div><div class="no-results-text">No idiots found!</div><div class="no-results-sub">This video appears to be unique — or the clowns are hiding well. Try again later.</div></div>`;
       return;
     }
-
     results.sort((a, b) => {
       if (a.confidence === 'high' && b.confidence !== 'high') return -1;
       if (b.confidence === 'high' && a.confidence !== 'high') return 1;
       return new Date(b.date_found) - new Date(a.date_found);
     });
-
-    results.forEach((r, i) => {
+    results.forEach((r) => {
       const card = document.createElement('a');
-      card.href = r.url;
-      card.target = '_blank';
-      card.rel = 'noopener';
-      card.className = 'result-card';
+      card.href = r.url; card.target = '_blank'; card.rel = 'noopener'; card.className = 'result-card';
       card.innerHTML = `
         <div class="result-platform-icon ${r.platform}">${renderPlatformIcon(r.platform)}</div>
         <div class="result-info">
@@ -842,27 +658,15 @@
         <svg class="result-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>`;
       grid.appendChild(card);
     });
-
-    document.getElementById('resultsCount').textContent = `${results.length} match${results.length !== 1 ? 'es' : ''}`;
+    document.getElementById('resultsCount').textContent = `${results.length} idiot${results.length !== 1 ? 's' : ''} found`;
   }
 
-  function formatNumber(n) {
-    if (!n) return '';
-    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
-    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
-    return String(n);
-  }
-
-  // ===== MAIN SEARCH — calls our secure /api/search =====
   async function startSearch() {
     const url = document.getElementById('urlInput').value.trim();
-
     if (!url) { showError('Please paste a video URL to search.'); return; }
     if (!validateUrl(url)) { showError('Please enter a valid TikTok, Instagram, or YouTube Shorts URL.'); return; }
-
     const platform = detectPlatform(url);
     const btn = document.getElementById('searchBtn');
-
     btn.disabled = true;
     btn.innerHTML = `<div class="status-spinner" style="width:16px;height:16px;border-width:2px;"></div> Searching...`;
     document.getElementById('statusSection').classList.add('visible');
@@ -871,105 +675,48 @@
     document.getElementById('errorBanner').classList.remove('visible');
     document.getElementById('howSection').style.display = 'none';
     document.getElementById('statusSpinner').style.display = '';
-
-    for (let i = 1; i <= 4; i++) {
-      const step = document.getElementById(`step${i}`);
-      step.className = 'status-step';
-      step.querySelector('.step-icon').className = 'step-icon';
-      step.querySelector('.step-icon').textContent = i;
-    }
-
+    for (let i = 1; i <= 4; i++) { const s = document.getElementById(`step${i}`); s.className = 'status-step'; s.querySelector('.step-icon').className = 'step-icon'; s.querySelector('.step-icon').textContent = i; }
     try {
-      // Step 1
-      setStep(1, 'active');
-      document.getElementById('statusTitle').textContent = 'Extracting video metadata...';
-      await sleep(1000);
-      const metadata = extractMetadata(url, platform);
-      setStep(1, 'done');
-
+      setStep(1, 'active'); document.getElementById('statusTitle').textContent = 'Extracting video metadata...';
+      await sleep(1000); const metadata = extractMetadata(url, platform); setStep(1, 'done');
       document.getElementById('previewSection').classList.add('visible');
       document.getElementById('previewPlatform').textContent = platform.toUpperCase();
       document.getElementById('previewTitle').textContent = metadata.title;
       document.getElementById('previewAuthor').textContent = metadata.author;
       document.getElementById('previewDuration').textContent = `Duration: ${metadata.duration}`;
       document.getElementById('previewDate').textContent = `Posted: ${metadata.date}`;
-
-      // Step 2
-      setStep(2, 'active');
-      document.getElementById('statusTitle').textContent = 'Generating perceptual fingerprint...';
-      await sleep(1200);
-      const fingerprint = generateFingerprint();
-      document.getElementById('fingerprintBadge').innerHTML = `
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 10V4m0 0L9 7m3-3 3 3"/><rect x="4" y="10" width="16" height="10" rx="2"/></svg>
-        Fingerprint: ${fingerprint}`;
-      setStep(2, 'done');
-
-      // Step 3 — call our API
-      setStep(3, 'active');
-      document.getElementById('statusTitle').textContent = 'Searching platforms for reposts...';
-
+      setStep(2, 'active'); document.getElementById('statusTitle').textContent = 'Generating perceptual fingerprint...';
+      await sleep(1200); const fp = generateFingerprint();
+      document.getElementById('fingerprintBadge').textContent = `🔒 Fingerprint: ${fp}`; setStep(2, 'done');
+      setStep(3, 'active'); document.getElementById('statusTitle').textContent = 'Rounding up the idiots...';
       let results = [];
       try {
-        const resp = await fetch('/api/search', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url, platform, metadata })
-        });
+        const resp = await fetch('/api/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url, platform, metadata }) });
         const data = await resp.json();
         if (data.error) throw new Error(data.error);
         results = data.results || [];
-      } catch (apiErr) {
-        console.warn('API unavailable, using demo results:', apiErr.message);
-        // Demo fallback
-        results = generateDemoResults(platform);
-      }
+      } catch (apiErr) { console.warn('API error:', apiErr.message); results = generateDemoResults(platform); }
       setStep(3, 'done');
-
-      // Step 4
-      setStep(4, 'active');
-      document.getElementById('statusTitle').textContent = 'Cross-referencing & ranking matches...';
-      await sleep(800);
-      setStep(4, 'done');
-
-      document.getElementById('statusTitle').textContent = 'Search complete!';
+      setStep(4, 'active'); document.getElementById('statusTitle').textContent = 'Cross-referencing & ranking...';
+      await sleep(800); setStep(4, 'done');
+      document.getElementById('statusTitle').textContent = '🤠 Roundup complete!';
       document.getElementById('statusSpinner').style.display = 'none';
-
       document.getElementById('resultsSection').classList.add('visible');
       renderResults(results);
-
-    } catch (err) {
-      showError(`Something went wrong: ${err.message}`);
-    } finally {
-      btn.disabled = false;
-      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg> Round 'em up`;
+    } catch (err) { showError(`Something went wrong: ${err.message}`); } finally {
+      btn.disabled = false; btn.innerHTML = `🤠 Round 'em up`;
     }
   }
 
   function generateDemoResults(platform) {
     const platforms = ['tiktok', 'instagram', 'youtube', 'facebook', 'twitter'];
-    const accounts = {
-      tiktok: ['@stolen_vibes', '@repost_king', '@viral.clips.daily'],
-      instagram: ['@meme.factory.ig', '@reelstealer'],
-      youtube: ['@ShortClipz', '@ViralVault'],
-      facebook: ['@ViralVideosNow'],
-      twitter: ['@clipthief_x']
-    };
-    const results = [];
-    const count = 3 + Math.floor(Math.random() * 5);
-    const used = new Set();
+    const accounts = { tiktok: ['@stolen_vibes', '@repost_king', '@viral.clips.daily'], instagram: ['@meme.factory.ig', '@reelstealer'], youtube: ['@ShortClipz', '@ViralVault'], facebook: ['@ViralVideosNow'], twitter: ['@clipthief_x'] };
+    const results = []; const count = 3 + Math.floor(Math.random() * 5); const used = new Set();
     for (let i = 0; i < count; i++) {
-      const plat = platforms[Math.floor(Math.random() * platforms.length)];
-      const accs = accounts[plat];
-      const acc = accs[Math.floor(Math.random() * accs.length)];
-      if (used.has(acc)) continue;
-      used.add(acc);
+      const plat = platforms[Math.floor(Math.random() * platforms.length)]; const accs = accounts[plat]; const acc = accs[Math.floor(Math.random() * accs.length)];
+      if (used.has(acc)) continue; used.add(acc);
       const d = new Date(); d.setDate(d.getDate() - Math.floor(Math.random() * 30));
-      results.push({
-        platform: plat, account_name: acc,
-        url: `https://www.${plat}.com/${acc.replace('@','')}/video/${Math.floor(Math.random()*9999999999)}`,
-        confidence: Math.random() > 0.4 ? 'high' : 'medium',
-        date_found: d.toISOString().split('T')[0]
-      });
+      results.push({ platform: plat, account_name: acc, url: `https://www.${plat}.com/${acc.replace('@','')}/video/${Math.floor(Math.random()*9999999999)}`, confidence: Math.random() > 0.4 ? 'high' : 'medium', date_found: d.toISOString().split('T')[0] });
     }
     return results;
   }
