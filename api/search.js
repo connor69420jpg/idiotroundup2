@@ -5,8 +5,10 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  const apifyToken = process.env.APIFY_API_TOKEN;
+
+  if (!anthropicKey) {
     return res.status(500).json({ error: "ANTHROPIC_API_KEY not configured" });
   }
 
@@ -16,66 +18,46 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Missing url or platform" });
     }
 
-    const client = new Anthropic({ apiKey });
     const videoId = extractVideoId(url, platform);
     const author = metadata?.author || "unknown";
+    const client = new Anthropic({ apiKey: anthropicKey });
 
-    // Run all search passes in parallel for speed
-    const passes = await Promise.all([
-      runSearch(client, `Go to this TikTok video and find out what it is about: ${url}
-Then search for EVERY TikTok account that reposted this same video. Specifically search for each of these accounts and check if they posted this video:
-- Search: "countrycentral hawk tuah revival TikTok"
-- Search: "barstoolsports hawk tuah zach bryan TikTok"  
-- Search: "zachbryanarchive hawk tuah TikTok"
-- Search: "oklahomanoutlaw hawk tuah zach bryan TikTok"
-- Search: "morezachbryan hawk tuah TikTok"
-For each result, I need the EXACT TikTok URL (like https://www.tiktok.com/@username/video/1234567890).
-Do at least 5 separate web searches.`, url, videoId),
+    // Step 1: Use AI to identify the video content first
+    const videoInfo = await identifyVideo(client, url, platform, author);
 
-      runSearch(client, `Search Instagram for every account that reposted the Hawk Tuah Revival Zach Bryan video originally posted by @greatamericanbarscene on TikTok.
-Do these specific searches:
-- Search: "instagram.com countrycentral hawk tuah zach bryan"
-- Search: "instagram.com zachbryanarchive hawk tuah revival reel"
-- Search: "instagram.com whiskeyriff hawk tuah zach bryan"
-- Search: "instagram.com barstoolsports hawk tuah zach bryan reel"
-- Search: "instagram.com dailymail hawk tuah zach bryan"
-- Search: "instagram reel hawk tuah revival nashville"
-I need EXACT Instagram URLs (like https://www.instagram.com/username/reel/ABC123/ or https://www.instagram.com/p/ABC123/).
-Do at least 5 separate web searches and return every Instagram post/reel you find.`, url, videoId),
+    // Step 2: Run all searches in parallel
+    const searches = [];
 
-      runSearch(client, `Search for every news website, blog, and YouTube video that featured or embedded the Hawk Tuah Revival video by @greatamericanbarscene. 
-Do these specific searches:
-- Search: "whiskeyriff.com hawk tuah zach bryan revival"
-- Search: "rollingstone.com zach bryan hawk tuah"
-- Search: "billboard.com zach bryan hawk tuah"
-- Search: "tasteofcountry.com zach bryan hawk tuah"
-- Search: "tmz.com zach bryan hawk tuah"
-- Search: "stereogum.com hawk tuah zach bryan"
-- Search: "youtube hawk tuah revival zach bryan"
-- Search: "barstoolsports.com hawk tuah zach bryan"
-- Search: "twitter.com hawk tuah zach bryan revival"
-I need EXACT URLs to the articles or videos. Do at least 6 separate web searches.`, url, videoId),
+    // Apify TikTok search (if token available)
+    if (apifyToken) {
+      searches.push(
+        apifyTikTokSearch(apifyToken, videoInfo.keywords, 30)
+          .then(items => parseTikTokResults(items, videoId, author))
+          .catch(err => { console.error("TikTok scrape error:", err.message); return []; })
+      );
 
-      runSearch(client, `Search for ANY other social media accounts or pages that reposted or shared the Hawk Tuah Zach Bryan Revival video from @greatamericanbarscene.
-Do these specific searches:
-- Search: "hawk tuah zach bryan revival video repost"
-- Search: "hawk tuah nissan stadium revival TikTok repost"  
-- Search: "greatamericanbarscene hawk tuah video reposted"
-- Search: "hawk tuah on stage zach bryan video"
-- Search: "hailey welch zach bryan stage revival video"
-Look for fan accounts, meme pages, news pages on TikTok, Instagram, YouTube, Twitter, Facebook, and any other platform.
-I need EXACT working URLs. Do at least 5 separate web searches.`, url, videoId),
-    ]);
+      searches.push(
+        apifyInstagramSearch(apifyToken, videoInfo.hashtags, 30)
+          .then(items => parseInstagramResults(items, author))
+          .catch(err => { console.error("Instagram scrape error:", err.message); return []; })
+      );
+    }
 
-    // Flatten and deduplicate
-    let allResults = passes.flat();
+    // AI web search (always runs — catches websites, YouTube, Twitter, etc.)
+    searches.push(
+      aiWebSearch(client, url, platform, author, videoInfo)
+        .catch(err => { console.error("AI search error:", err.message); return []; })
+    );
+
+    const allPasses = await Promise.all(searches);
+    let allResults = allPasses.flat();
+
+    // Deduplicate
     const seen = new Set();
     allResults = allResults.filter((r) => {
       if (!r || !r.url) return false;
-      // Normalize URL for dedup
       let key = r.url.toLowerCase().replace(/[?#].*$/, "").replace(/\/$/, "");
       if (seen.has(key)) return false;
-      // Filter out the original video
       if (videoId && key.includes(videoId)) return false;
       seen.add(key);
       return true;
@@ -88,58 +70,197 @@ I need EXACT working URLs. Do at least 5 separate web searches.`, url, videoId),
       return 0;
     });
 
-    return res.status(200).json({ results: allResults });
+    return res.status(200).json({
+      results: allResults,
+      sources: {
+        apify: !!apifyToken,
+        ai_search: true,
+      },
+    });
   } catch (err) {
     console.error("API error:", err.message);
     return res.status(500).json({ error: err.message });
   }
 }
 
-async function runSearch(client, instructions, originalUrl, videoId) {
+// ===== IDENTIFY VIDEO CONTENT =====
+async function identifyVideo(client, url, platform, author) {
   try {
-    const message = await client.messages.create({
+    const msg = await client.messages.create({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 2000,
-      system: `You are a video repost detective. You find every instance of a viral video being reposted across the internet.
-
-CRITICAL RULES:
-1. Perform MULTIPLE separate web searches (at least 4-5 different queries).
-2. Every URL you return MUST be a real URL you found in search results. NEVER make up or guess URLs.
-3. Return ONLY a JSON array. No other text before or after.
-
-Each object in the array must have:
-- "platform": "tiktok", "instagram", "youtube", "facebook", "twitter", or "website"
-- "account_name": the account name with @ for social media (e.g. "@countrycentral") or site name for websites (e.g. "Whiskey Riff")
-- "url": the EXACT URL from search results — must be real and clickable
-- "confidence": "high" if you found the actual post, "medium" if it seems related
-- "date_found": date in YYYY-MM-DD format
-- "type": "repost" (re-uploaded video), "embed" (article with embedded video), or "reaction" (reaction/commentary video)
-
-Do NOT include the original video: ${originalUrl}
-Return ONLY the JSON array.`,
-      messages: [{ role: "user", content: instructions }],
+      max_tokens: 400,
+      system:
+        'Look up this video and return ONLY a JSON object with: keywords (string - main search terms to find this video, 5-8 words), hashtags (string - comma-separated hashtags without #), description (string - one sentence about the video). No other text.',
+      messages: [{ role: "user", content: `What is this video about? ${url} by ${author} on ${platform}` }],
       tools: [{ type: "web_search_20250305", name: "web_search" }],
     });
-
-    const text = message.content
-      .filter((b) => b.type === "text")
-      .map((b) => b.text)
-      .join("\n");
-
-    try {
-      const cleaned = text.replace(/```json|```/g, "").trim();
-      const match = cleaned.match(/\[[\s\S]*\]/);
-      if (match) return JSON.parse(match[0]);
-    } catch (e) {
-      console.error("Parse error:", e.message);
-    }
-    return [];
-  } catch (err) {
-    console.error("Search failed:", err.message);
-    return [];
-  }
+    const text = msg.content.filter((b) => b.type === "text").map((b) => b.text).join("\n");
+    const match = text.replace(/```json|```/g, "").match(/\{[\s\S]*\}/);
+    if (match) return JSON.parse(match[0]);
+  } catch {}
+  return { keywords: `${author} video ${platform}`, hashtags: "", description: "" };
 }
 
+// ===== APIFY TIKTOK SEARCH =====
+async function apifyTikTokSearch(token, keywords, maxItems) {
+  // Use the free TikTok scraper actor with search query
+  const actorId = "clockworks~free-tiktok-scraper";
+  const input = {
+    searchQueries: [keywords],
+    maxItems: maxItems,
+    searchSection: "video",
+  };
+
+  const response = await fetch(
+    `https://api.apify.com/v2/acts/${actorId}/run-sync-get-dataset-items?token=${token}&timeout=60`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    }
+  );
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Apify TikTok error ${response.status}: ${errText.substring(0, 200)}`);
+  }
+
+  return await response.json();
+}
+
+// ===== APIFY INSTAGRAM SEARCH =====
+async function apifyInstagramSearch(token, hashtags, maxItems) {
+  // Use Instagram hashtag scraper
+  const actorId = "apify~instagram-hashtag-scraper";
+  const hashtagList = hashtags
+    .split(",")
+    .map((h) => h.trim())
+    .filter(Boolean)
+    .slice(0, 3); // max 3 hashtags to save credits
+
+  if (hashtagList.length === 0) return [];
+
+  const input = {
+    hashtags: hashtagList,
+    resultsLimit: maxItems,
+  };
+
+  const response = await fetch(
+    `https://api.apify.com/v2/acts/${actorId}/run-sync-get-dataset-items?token=${token}&timeout=60`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    }
+  );
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Apify Instagram error ${response.status}: ${errText.substring(0, 200)}`);
+  }
+
+  return await response.json();
+}
+
+// ===== PARSE TIKTOK RESULTS =====
+function parseTikTokResults(items, originalVideoId, originalAuthor) {
+  if (!Array.isArray(items)) return [];
+  const authorClean = originalAuthor.replace("@", "").toLowerCase();
+
+  return items
+    .filter((item) => {
+      // Filter out the original video
+      const itemId = String(item.id || item.videoId || "");
+      if (itemId === originalVideoId) return false;
+      // Filter out the original author
+      const itemAuthor = (item.authorMeta?.name || item.author?.uniqueId || "").toLowerCase();
+      if (itemAuthor === authorClean) return false;
+      return true;
+    })
+    .map((item) => {
+      const username = item.authorMeta?.name || item.author?.uniqueId || "unknown";
+      const id = item.id || item.videoId || "";
+      return {
+        platform: "tiktok",
+        account_name: `@${username}`,
+        url: item.webVideoUrl || `https://www.tiktok.com/@${username}/video/${id}`,
+        confidence: "high",
+        date_found: item.createTimeISO
+          ? item.createTimeISO.split("T")[0]
+          : new Date().toISOString().split("T")[0],
+        type: "repost",
+        likes: item.diggCount || item.stats?.diggCount || 0,
+        views: item.playCount || item.stats?.playCount || 0,
+      };
+    });
+}
+
+// ===== PARSE INSTAGRAM RESULTS =====
+function parseInstagramResults(items, originalAuthor) {
+  if (!Array.isArray(items)) return [];
+  const authorClean = originalAuthor.replace("@", "").toLowerCase();
+
+  return items
+    .filter((item) => {
+      const itemAuthor = (item.ownerUsername || "").toLowerCase();
+      if (itemAuthor === authorClean) return false;
+      return item.type === "Video" || item.videoUrl;
+    })
+    .map((item) => {
+      const username = item.ownerUsername || "unknown";
+      return {
+        platform: "instagram",
+        account_name: `@${username}`,
+        url: item.url || `https://www.instagram.com/p/${item.shortCode}/`,
+        confidence: "high",
+        date_found: item.timestamp
+          ? new Date(item.timestamp * 1000).toISOString().split("T")[0]
+          : new Date().toISOString().split("T")[0],
+        type: "repost",
+        likes: item.likesCount || 0,
+        views: item.videoViewCount || 0,
+      };
+    });
+}
+
+// ===== AI WEB SEARCH =====
+async function aiWebSearch(client, url, platform, author, videoInfo) {
+  const msg = await client.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 2000,
+    system: `You find reposted video content. Do 5+ web searches. Return ONLY a JSON array.
+Each object: platform (tiktok/instagram/youtube/facebook/twitter/website), account_name, url (REAL URL from search results only), confidence (high/medium), date_found (YYYY-MM-DD), type (repost/embed/reaction).
+Do NOT include the original: ${url}. NEVER fabricate URLs.`,
+    messages: [
+      {
+        role: "user",
+        content: `Find reposts of this video: ${url} by ${author}
+Content: ${videoInfo.description}
+Keywords: ${videoInfo.keywords}
+Hashtags: ${videoInfo.hashtags}
+
+Search for:
+1. "instagram.com ${videoInfo.keywords}"
+2. "whiskeyriff.com ${videoInfo.keywords}"
+3. "${videoInfo.keywords} repost site:youtube.com OR site:twitter.com"
+4. "${videoInfo.keywords} site:rollingstone.com OR site:billboard.com OR site:tmz.com"
+5. "${author} ${videoInfo.keywords} reposted"
+6. "${videoInfo.hashtags} repost TikTok Instagram"`,
+      },
+    ],
+    tools: [{ type: "web_search_20250305", name: "web_search" }],
+  });
+
+  const text = msg.content.filter((b) => b.type === "text").map((b) => b.text).join("\n");
+  try {
+    const cleaned = text.replace(/```json|```/g, "").trim();
+    const match = cleaned.match(/\[[\s\S]*\]/);
+    if (match) return JSON.parse(match[0]);
+  } catch {}
+  return [];
+}
+
+// ===== HELPERS =====
 function extractVideoId(url, platform) {
   try {
     const u = new URL(url);
