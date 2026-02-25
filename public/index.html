@@ -369,8 +369,30 @@
   .type-badge.reaction { background: rgba(138,134,150,0.15); color: var(--text-secondary); }
 
   .result-info { flex: 1; min-width: 0; }
-  .result-account { font-weight: 700; font-size: 14px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .result-account { font-weight: 700; font-size: 14px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; }
   .result-url { font-size: 12px; color: var(--text-muted); font-family: 'Space Mono', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .ours-star {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: linear-gradient(135deg, rgba(255,210,63,0.2), rgba(255,107,53,0.2));
+    border: 1px solid rgba(255,210,63,0.4);
+    border-radius: 100px; padding: 1px 8px;
+    font-size: 10px; font-family: 'Bangers', cursive;
+    letter-spacing: 1px; color: var(--accent-yellow); flex-shrink: 0;
+  }
+
+  .metrics-bar {
+    display: flex; gap: 12px; margin-top: 6px; flex-wrap: wrap;
+  }
+
+  .metric-item {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 12px; font-family: 'Space Mono', monospace;
+    color: var(--text-secondary); background: rgba(255,255,255,0.04);
+    border-radius: 6px; padding: 3px 8px;
+  }
+  .metric-item .metric-icon { font-size: 11px; }
+  .metric-item .metric-val { font-weight: 700; color: var(--text-primary); }
 
   .result-match { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
 
@@ -627,6 +649,14 @@
     return String(n);
   }
 
+  // Accounts that belong to us — get a ⭐ star badge
+  const OUR_ACCOUNTS = ['zachbryanarchive', 'oklahomanoutlaw', 'greatamericanbarscene'];
+
+  function isOurAccount(name) {
+    const clean = (name || '').replace(/^@/, '').toLowerCase().trim();
+    return OUR_ACCOUNTS.includes(clean);
+  }
+
   function renderResults(results) {
     const grid = document.getElementById('resultsGrid');
     grid.innerHTML = '';
@@ -642,17 +672,32 @@
     results.forEach((r) => {
       const card = document.createElement('a');
       card.href = r.url; card.target = '_blank'; card.rel = 'noopener'; card.className = 'result-card';
+
+      const ours = isOurAccount(r.account_name);
+      const starBadge = ours ? `<span class="ours-star">⭐ OURS</span>` : '';
+
+      // Build metrics bar
+      const metrics = [];
+      if (r.views) metrics.push(`<span class="metric-item"><span class="metric-icon">👁</span><span class="metric-val">${formatNumber(r.views)}</span> views</span>`);
+      if (r.likes) metrics.push(`<span class="metric-item"><span class="metric-icon">❤️</span><span class="metric-val">${formatNumber(r.likes)}</span> likes</span>`);
+      if (r.comments) metrics.push(`<span class="metric-item"><span class="metric-icon">💬</span><span class="metric-val">${formatNumber(r.comments)}</span> comments</span>`);
+      if (r.shares) metrics.push(`<span class="metric-item"><span class="metric-icon">🔁</span><span class="metric-val">${formatNumber(r.shares)}</span> shares</span>`);
+      // Estimated impressions: views * 1.2 or likes * 15 as rough estimate
+      const impressionEst = r.views ? Math.round(r.views * 1.2) : (r.likes ? Math.round(r.likes * 15) : 0);
+      if (impressionEst > 0) metrics.push(`<span class="metric-item"><span class="metric-icon">📊</span><span class="metric-val">~${formatNumber(impressionEst)}</span> impressions</span>`);
+
+      const metricsHtml = metrics.length > 0 ? `<div class="metrics-bar">${metrics.join('')}</div>` : '';
+
       card.innerHTML = `
         <div class="result-platform-icon ${r.platform}">${renderPlatformIcon(r.platform)}</div>
         <div class="result-info">
-          <div class="result-account">${r.account_name}</div>
+          <div class="result-account">${r.account_name} ${starBadge}</div>
           <div class="result-url">${r.url}</div>
           ${r.type ? `<span class="type-badge ${r.type}">${r.type}</span>` : ''}
+          ${metricsHtml}
         </div>
         <div class="result-match">
           <span class="match-badge ${r.confidence}">${r.confidence === 'high' ? '98%+' : '~85%'} match</span>
-          ${r.views ? `<span class="result-date">${formatNumber(r.views)} views</span>` : ''}
-          ${r.likes ? `<span class="result-date">${formatNumber(r.likes)} likes</span>` : ''}
           <span class="result-date">${r.date_found}</span>
         </div>
         <svg class="result-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>`;
@@ -709,16 +754,16 @@
   }
 
   function generateDemoResults(platform) {
-    const platforms = ['tiktok', 'instagram', 'youtube', 'facebook', 'twitter'];
-    const accounts = { tiktok: ['@stolen_vibes', '@repost_king', '@viral.clips.daily'], instagram: ['@meme.factory.ig', '@reelstealer'], youtube: ['@ShortClipz', '@ViralVault'], facebook: ['@ViralVideosNow'], twitter: ['@clipthief_x'] };
-    const results = []; const count = 3 + Math.floor(Math.random() * 5); const used = new Set();
-    for (let i = 0; i < count; i++) {
-      const plat = platforms[Math.floor(Math.random() * platforms.length)]; const accs = accounts[plat]; const acc = accs[Math.floor(Math.random() * accs.length)];
-      if (used.has(acc)) continue; used.add(acc);
-      const d = new Date(); d.setDate(d.getDate() - Math.floor(Math.random() * 30));
-      results.push({ platform: plat, account_name: acc, url: `https://www.${plat}.com/${acc.replace('@','')}/video/${Math.floor(Math.random()*9999999999)}`, confidence: Math.random() > 0.4 ? 'high' : 'medium', date_found: d.toISOString().split('T')[0] });
-    }
-    return results;
+    const demoResults = [
+      { platform: 'tiktok', account_name: '@zachbryanarchive', url: 'https://www.tiktok.com/@zachbryanarchive/video/7386200000000', confidence: 'high', date_found: '2024-06-29', type: 'repost', likes: 87300, views: 2100000, comments: 1086, shares: 4200 },
+      { platform: 'tiktok', account_name: '@countrycentral', url: 'https://www.tiktok.com/@countrycentral/video/7386300000000', confidence: 'high', date_found: '2024-06-30', type: 'repost', likes: 465600, views: 8500000, comments: 3200, shares: 12000 },
+      { platform: 'tiktok', account_name: '@oklahomanoutlaw', url: 'https://www.tiktok.com/@oklahomanoutlaw/video/7386400000000', confidence: 'high', date_found: '2024-06-30', type: 'repost', likes: 52100, views: 1400000, comments: 680, shares: 2100 },
+      { platform: 'tiktok', account_name: '@barstoolsports', url: 'https://www.tiktok.com/@barstoolsports/video/7386500000000', confidence: 'high', date_found: '2024-06-29', type: 'repost', likes: 120000, views: 4200000, comments: 2500, shares: 8900 },
+      { platform: 'instagram', account_name: '@zachbryanarchivee', url: 'https://www.instagram.com/reel/C809yEcOoEw/', confidence: 'high', date_found: '2024-06-29', type: 'repost', likes: 89000, views: 1800000, comments: 1976 },
+      { platform: 'website', account_name: 'Whiskey Riff', url: 'https://www.whiskeyriff.com/2024/06/30/zach-bryan-hawk-tuah/', confidence: 'high', date_found: '2024-06-30', type: 'embed', views: 340000 },
+      { platform: 'website', account_name: 'Rolling Stone', url: 'https://www.rollingstone.com/music/music-news/zach-bryan-hawk-tuah/', confidence: 'medium', date_found: '2024-07-01', type: 'embed', views: 520000 },
+    ];
+    return demoResults;
   }
 
   document.getElementById('urlInput').addEventListener('keydown', e => { if (e.key === 'Enter') startSearch(); });
