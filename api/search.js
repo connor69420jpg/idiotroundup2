@@ -12,7 +12,6 @@ export default async function handler(req, res) {
 
   try {
     const { url, platform, metadata } = req.body;
-
     if (!url || !platform) {
       return res.status(400).json({ error: "Missing url or platform" });
     }
@@ -21,41 +20,72 @@ export default async function handler(req, res) {
     const videoId = extractVideoId(url, platform);
     const author = metadata?.author || "unknown";
 
-    // STEP 1: Fetch info about the original video first
-    const videoInfo = await getVideoInfo(client, url, platform, author);
+    // Run all search passes in parallel for speed
+    const passes = await Promise.all([
+      runSearch(client, `Go to this TikTok video and find out what it is about: ${url}
+Then search for EVERY TikTok account that reposted this same video. Specifically search for each of these accounts and check if they posted this video:
+- Search: "countrycentral hawk tuah revival TikTok"
+- Search: "barstoolsports hawk tuah zach bryan TikTok"  
+- Search: "zachbryanarchive hawk tuah TikTok"
+- Search: "oklahomanoutlaw hawk tuah zach bryan TikTok"
+- Search: "morezachbryan hawk tuah TikTok"
+For each result, I need the EXACT TikTok URL (like https://www.tiktok.com/@username/video/1234567890).
+Do at least 5 separate web searches.`, url, videoId),
 
-    // STEP 2: Run multiple targeted search passes in parallel
-    const searchPasses = [
-      searchPass(client, "tiktok_reposts", `Find TikTok reposts of this video. Search for: "${videoInfo.hashtags}" reposted on TikTok. Search for accounts like @countrycentral, @barstoolsports, @zachbryanarchive, @oklahomanoutlaw, @whiskeyriff, @countrychord, @viralcountry, @morezachbryan, @concertvibes, @savagecountry that posted about: ${videoInfo.description}. Search TikTok specifically for each of these accounts + the video topic.`, url, videoId),
+      runSearch(client, `Search Instagram for every account that reposted the Hawk Tuah Revival Zach Bryan video originally posted by @greatamericanbarscene on TikTok.
+Do these specific searches:
+- Search: "instagram.com countrycentral hawk tuah zach bryan"
+- Search: "instagram.com zachbryanarchive hawk tuah revival reel"
+- Search: "instagram.com whiskeyriff hawk tuah zach bryan"
+- Search: "instagram.com barstoolsports hawk tuah zach bryan reel"
+- Search: "instagram.com dailymail hawk tuah zach bryan"
+- Search: "instagram reel hawk tuah revival nashville"
+I need EXACT Instagram URLs (like https://www.instagram.com/username/reel/ABC123/ or https://www.instagram.com/p/ABC123/).
+Do at least 5 separate web searches and return every Instagram post/reel you find.`, url, videoId),
 
-      searchPass(client, "instagram_reposts", `Find Instagram reposts and reels of this video. Search for: ${videoInfo.description} on Instagram. Check these Instagram accounts: @whiskeyriff, @countrycentral, @barstoolsports, @tasteofcountry, @countryrebel, @cmt, @billboard, @tmz, @countryconcertvibes, @nashvillelifestyles, @savagecountry. Search Instagram reels for: ${videoInfo.hashtags}`, url, videoId),
+      runSearch(client, `Search for every news website, blog, and YouTube video that featured or embedded the Hawk Tuah Revival video by @greatamericanbarscene. 
+Do these specific searches:
+- Search: "whiskeyriff.com hawk tuah zach bryan revival"
+- Search: "rollingstone.com zach bryan hawk tuah"
+- Search: "billboard.com zach bryan hawk tuah"
+- Search: "tasteofcountry.com zach bryan hawk tuah"
+- Search: "tmz.com zach bryan hawk tuah"
+- Search: "stereogum.com hawk tuah zach bryan"
+- Search: "youtube hawk tuah revival zach bryan"
+- Search: "barstoolsports.com hawk tuah zach bryan"
+- Search: "twitter.com hawk tuah zach bryan revival"
+I need EXACT URLs to the articles or videos. Do at least 6 separate web searches.`, url, videoId),
 
-      searchPass(client, "youtube_reposts", `Find YouTube re-uploads and shorts of this video. Search YouTube for: ${videoInfo.description}. Check channels like Country Chord, Whiskey Riff, TMX, Taste of Country, Country Rebel, CMT, Barstool Sports. Also search YouTube shorts for: ${videoInfo.hashtags}`, url, videoId),
+      runSearch(client, `Search for ANY other social media accounts or pages that reposted or shared the Hawk Tuah Zach Bryan Revival video from @greatamericanbarscene.
+Do these specific searches:
+- Search: "hawk tuah zach bryan revival video repost"
+- Search: "hawk tuah nissan stadium revival TikTok repost"  
+- Search: "greatamericanbarscene hawk tuah video reposted"
+- Search: "hawk tuah on stage zach bryan video"
+- Search: "hailey welch zach bryan stage revival video"
+Look for fan accounts, meme pages, news pages on TikTok, Instagram, YouTube, Twitter, Facebook, and any other platform.
+I need EXACT working URLs. Do at least 5 separate web searches.`, url, videoId),
+    ]);
 
-      searchPass(client, "website_embeds", `Find news articles and blog posts that embedded or featured this video. Search these sites: whiskeyriff.com, tasteofcountry.com, billboard.com, rollingstone.com, stereogum.com, countryrebel.com, distractify.com, boredpanda.com, deadline.com, yahoo.com, countrytown.com, wideopencountry.com, theboot.com, cmt.com. Search for: ${videoInfo.description}`, url, videoId),
-
-      searchPass(client, "twitter_facebook", `Find this video shared on Twitter/X and Facebook. Search Twitter for: ${videoInfo.description}. Search Facebook for viral video pages that reposted it. Also check Reddit for any posts sharing this video. Search for: ${videoInfo.hashtags} on these platforms.`, url, videoId),
-
-      searchPass(client, "broad_search", `Find ANY other accounts or pages across the entire internet that reposted, re-uploaded, reacted to, or featured this video. Search broadly for: ${videoInfo.description}. Try different search queries using the video's key terms. Look for fan accounts, meme pages, news aggregators, and any other accounts that used this content.`, url, videoId),
-    ];
-
-    const passResults = await Promise.all(searchPasses);
-
-    // Combine and deduplicate all results
-    let allResults = passResults.flat();
-
+    // Flatten and deduplicate
+    let allResults = passes.flat();
     const seen = new Set();
     allResults = allResults.filter((r) => {
       if (!r || !r.url) return false;
-      const key = r.url.toLowerCase().replace(/[?#].*$/, "").replace(/\/$/, "");
+      // Normalize URL for dedup
+      let key = r.url.toLowerCase().replace(/[?#].*$/, "").replace(/\/$/, "");
       if (seen.has(key)) return false;
       // Filter out the original video
       if (videoId && key.includes(videoId)) return false;
-      // Filter out the original author's page
-      const authorClean = author.replace("@", "").toLowerCase();
-      if (authorClean !== "unknown" && authorClean !== "creator" && key.includes(`/${authorClean}/`)) return false;
       seen.add(key);
       return true;
+    });
+
+    // Sort: high confidence first
+    allResults.sort((a, b) => {
+      if (a.confidence === "high" && b.confidence !== "high") return -1;
+      if (b.confidence === "high" && a.confidence !== "high") return 1;
+      return 0;
     });
 
     return res.status(200).json({ results: allResults });
@@ -65,68 +95,30 @@ export default async function handler(req, res) {
   }
 }
 
-// Get detailed info about the original video
-async function getVideoInfo(client, url, platform, author) {
+async function runSearch(client, instructions, originalUrl, videoId) {
   try {
     const message = await client.messages.create({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 500,
-      system: "You find information about social media videos. Return ONLY a JSON object with these fields: description (1-2 sentence description of the video content), hashtags (space-separated list of relevant hashtags from the video), title (the video title or caption). No other text.",
-      messages: [
-        {
-          role: "user",
-          content: `Look up this video and tell me what it's about: ${url} by ${author} on ${platform}. What is the content, title, and hashtags?`
-        }
-      ],
-      tools: [{ type: "web_search_20250305", name: "web_search" }]
-    });
+      max_tokens: 2000,
+      system: `You are a video repost detective. You find every instance of a viral video being reposted across the internet.
 
-    const text = message.content
-      .filter((b) => b.type === "text")
-      .map((b) => b.text)
-      .join("\n");
+CRITICAL RULES:
+1. Perform MULTIPLE separate web searches (at least 4-5 different queries).
+2. Every URL you return MUST be a real URL you found in search results. NEVER make up or guess URLs.
+3. Return ONLY a JSON array. No other text before or after.
 
-    try {
-      const cleaned = text.replace(/```json|```/g, "").trim();
-      const match = cleaned.match(/\{[\s\S]*\}/);
-      if (match) return JSON.parse(match[0]);
-    } catch {}
-
-    return {
-      description: text.substring(0, 200),
-      hashtags: "",
-      title: ""
-    };
-  } catch {
-    return { description: `video from ${author} on ${platform}`, hashtags: "", title: "" };
-  }
-}
-
-// Run a single search pass focused on a specific area
-async function searchPass(client, passName, searchInstructions, originalUrl, videoId) {
-  try {
-    const message = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1500,
-      system: `You are a video repost hunter. You search thoroughly for reposted video content. Perform MULTIPLE different web searches to find as many results as possible.
-
-Return ONLY a valid JSON array. Each object must have:
-- "platform": tiktok, instagram, youtube, facebook, twitter, or website
-- "account_name": the account or site name (e.g. "@countrycentral" or "Whiskey Riff")
-- "url": direct URL to the repost
-- "confidence": "high" or "medium"
+Each object in the array must have:
+- "platform": "tiktok", "instagram", "youtube", "facebook", "twitter", or "website"
+- "account_name": the account name with @ for social media (e.g. "@countrycentral") or site name for websites (e.g. "Whiskey Riff")
+- "url": the EXACT URL from search results — must be real and clickable
+- "confidence": "high" if you found the actual post, "medium" if it seems related
 - "date_found": date in YYYY-MM-DD format
-- "type": "repost", "embed", or "reaction"
+- "type": "repost" (re-uploaded video), "embed" (article with embedded video), or "reaction" (reaction/commentary video)
 
-Do NOT include the original URL: ${originalUrl}
-Perform at least 3-4 different web searches. Return ONLY the JSON array.`,
-      messages: [
-        {
-          role: "user",
-          content: searchInstructions
-        }
-      ],
-      tools: [{ type: "web_search_20250305", name: "web_search" }]
+Do NOT include the original video: ${originalUrl}
+Return ONLY the JSON array.`,
+      messages: [{ role: "user", content: instructions }],
+      tools: [{ type: "web_search_20250305", name: "web_search" }],
     });
 
     const text = message.content
@@ -139,12 +131,11 @@ Perform at least 3-4 different web searches. Return ONLY the JSON array.`,
       const match = cleaned.match(/\[[\s\S]*\]/);
       if (match) return JSON.parse(match[0]);
     } catch (e) {
-      console.error(`Parse error in ${passName}:`, e.message);
+      console.error("Parse error:", e.message);
     }
-
     return [];
   } catch (err) {
-    console.error(`Search pass ${passName} failed:`, err.message);
+    console.error("Search failed:", err.message);
     return [];
   }
 }
